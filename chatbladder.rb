@@ -1,6 +1,5 @@
 class ChatBladder
 
-  SESSION_DIR = "~/.cache/chatblade.d"
   API_KEY_ENVVAR = "OPENAI_API_KEY"
 
   module Hider
@@ -31,9 +30,8 @@ class ChatBladder
   @hidden_instance_variables = %i[api_key]
   include Hider
 
-  def initialize session: nil, session_dir: SESSION_DIR, api_key: nil, api_key_file: nil
+  def initialize session: nil, api_key: nil, api_key_file: nil
     self.session = session
-    self.session_dir = session_dir
     self.api_key = case api_key
     when ENV, :env, :environ, :environment
       ENV[API_KEY_ENVVAR]
@@ -44,42 +42,56 @@ class ChatBladder
     end or raise ArgumentError, "either API key or key file is needed"
   end
 
-  attr_reader :session, :session_dir
+  attr_reader :session
   attr_accessor :api_key
 
   def session= sess
     @session = sess&.to_s
   end
 
-  def session_dir= dir
-    @session_dir = File.expand_path(dir)
+  def make_call session: nil, params: nil, key: false, args: nil, sysargs: nil, &blk
+    [%w[python -m chatblade], params, session&.then { |s| ["-S", s.to_s] }, args].flatten.compact.then { |aa|
+      [key ? {API_KEY_ENVVAR=>@api_key} : nil, aa].compact
+    }.then { |aa|
+      blk ? IO.popen(*aa, *[sysargs].flatten.compact, &blk) : system(*[aa, sysargs].flatten.compact)
+    }.tap {
+      $?.success? or raise "chatblade failed"
+    }
   end
 
-  def ask question=nil, session: @session, quiet: false, params: %w[-s]
+  def ask question=nil, session: @session, quiet: false, params: "-s"
     question ||= yield
     puts "# Session: #{session&.to_s.inspect}" unless quiet
 
-    system({API_KEY_ENVVAR=>@api_key}, *[["python", "-m", "chatblade"],  params, session&.then { |s| ["-S", s.to_s] }, question].flatten.compact)
+    make_call(session:, params:, key: true, sysargs: ?w) { |f| f << question }
+    nil
   end
 
-  def list_sessions path: false
-    Dir.glob(@session_dir + "/*.yaml").map { |f| path ? f : File.basename(f).sub(/\.[^.]*/, "") }
+  def list_sessions
+    make_call(params: "--session-list") { |f| f.readlines(chomp: true) }
+  end
+
+  def get_session_path session=@session
+    make_call(session:, params: "--session-path") { |f| f.read.chomp  }
   end
 
   def get_session session=@session
-    YAML.load_file(File.join(@session_dir, session + ".yaml"))
+    make_call session:, params: "--session-dump", &YAML.method(:load)
   end
 
-  def print_session session=@session, via: nil
-    get_session(session).then { |a|
-      if via
-        ->(&blk) { IO.popen([via].flatten, ?w, &blk) }
-      else
-        ->(&blk) { blk.(STDOUT) }
-      end.call { |f|
-        a.each { |u,m| f.puts "**" + u.upcase + "**: " + m, "" }}
-      }
-      nil
+  def rename_session session=@session, to:
+    make_call session:, params: ["--session-rename", to.to_s]
+    nil
+  end
+
+  def delete_session session=@session
+    make_call session:, params: "--session-delete"
+    nil
+  end
+
+  def print_session session=@session, pretty: true, extract: false
+    make_call session:, params: extract ? "--extract" : (pretty ? nil : "--raw")
+    nil
   end
 
 end
