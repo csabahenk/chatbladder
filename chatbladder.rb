@@ -59,11 +59,11 @@ class ChatBladder
     }
   end
 
-  def ask question=nil, session: @session, quiet: false, params: "-s"
+  def ask question=nil, session: @session, prompt: nil, quiet: false, params0: "-s", params: nil
     question ||= yield
     puts "# Session: #{session&.to_s.inspect}" unless quiet
 
-    make_call(session:, params:, key: true, sysargs: ?w) { |f| f << question }
+    make_call(session:, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question }
     nil
   end
 
