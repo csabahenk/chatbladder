@@ -1,6 +1,7 @@
 class ChatBladder
 
   API_KEY_ENVVAR = "OPENAI_API_KEY"
+  Last = "last"
 
   module Hider
 
@@ -49,8 +50,8 @@ class ChatBladder
     @session = sess&.to_s
   end
 
-  def make_call session: nil, params: nil, key: false, args: nil, sysargs: nil, &blk
-    [%w[python -m chatblade], params, session&.then { |s| ["-S", s.to_s] }, args].flatten.compact.then { |aa|
+  def make_call session: nil, params: nil, key: false, sysargs: nil, &blk
+    [%w[python -m chatblade], session&.then { |s| ["-S", s.to_s] }, params].flatten.compact.then { |aa|
       [key ? {API_KEY_ENVVAR=>@api_key} : nil, aa].compact
     }.then { |aa|
       blk ? IO.popen(*aa, *[sysargs].flatten.compact, &blk) : system(*[aa, sysargs].flatten.compact)
@@ -59,11 +60,16 @@ class ChatBladder
     }
   end
 
-  def ask question=nil, session: @session, prompt: nil, quiet: false, params0: "-s", params: nil
-    question ||= yield
+  def ask question_or_session=nil, session: @session, prompt: nil, quiet: false, params0: "-s", params: nil
+    if block_given?
+      question = yield
+      session ||= question_or_session
+    else
+      question = question_or_session
+    end
     puts "# Session: #{session&.to_s.inspect}" unless quiet
 
-    make_call(session:, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question }
+    make_call(session:, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question.strip }
     nil
   end
 
