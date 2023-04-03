@@ -31,7 +31,7 @@ class ChatBladder
   @hidden_instance_variables = %i[api_key]
   include Hider
 
-  def initialize session: nil, api_key: nil, api_key_file: nil
+  def initialize api_key: nil, api_key_file: nil, session: nil, params0: "-s", params: nil
     self.session = session
     self.api_key = case api_key
     when ENV, :env, :environ, :environment
@@ -41,10 +41,11 @@ class ChatBladder
     else
       api_key
     end or raise ArgumentError, "either API key or key file is needed"
+    self.params0 = [params0, params].flatten.compact
   end
 
   attr_reader :session
-  attr_accessor :api_key
+  attr_accessor :api_key, :params0
 
   def session= sess
     @session = sess&.to_s
@@ -60,7 +61,7 @@ class ChatBladder
     }
   end
 
-  def ask question_or_session=nil, session: @session, prompt: nil, quiet: false, params0: "-s", params: nil
+  def ask question_or_session=nil, session: @session, prompt: nil, quiet: false, params0: @params0, params: nil
     if block_given?
       question = yield
       session ||= question_or_session
