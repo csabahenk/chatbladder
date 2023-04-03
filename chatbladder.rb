@@ -97,8 +97,18 @@ class ChatBladder
     nil
   end
 
-  def print_session session=@session, pretty: true, extract: false
-    make_call session:, params: extract ? "--extract" : (pretty ? nil : "--raw")
+  def print_session session=@session, pretty: true, format: true, extract: false, only: false
+    kw = {pretty:, format:, extract:, only:}
+    false_trans = {pretty: "raw", format: "no-format"}
+    kw.each.lazy.map { |k,v|
+      if v
+        false_trans.key?(k) ? nil : "--#{k}"
+      else
+        false_trans[k]&.then { "--" + _1 }
+      end
+    }.compact.to_a.then { |params|
+      make_call session:, params:
+    }
     nil
   end
 
