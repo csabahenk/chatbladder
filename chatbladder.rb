@@ -71,7 +71,7 @@ class ChatBladder
     question.is_a? String or raise TypeError, "question: got #{question.inspect} (#{question.class}), expecting a string"
     puts "# Session: #{session&.to_s.inspect}" unless quiet
 
-    make_call(session:, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question.strip }
+    make_call(session: session, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question.strip }
     nil
   end
 
@@ -80,25 +80,25 @@ class ChatBladder
   end
 
   def get_session_path session=@session
-    make_call(session:, params: "--session-path") { |f| f.read.chomp  }
+    make_call(session: session, params: "--session-path") { |f| f.read.chomp  }
   end
 
   def get_session session=@session
-    make_call session:, params: "--session-dump", &YAML.method(:load)
+    make_call session: session, params: "--session-dump", &YAML.method(:load)
   end
 
   def rename_session session=@session, to:
-    make_call session:, params: ["--session-rename", to.to_s]
+    make_call session: session, params: ["--session-rename", to.to_s]
     nil
   end
 
   def delete_session session=@session
-    make_call session:, params: "--session-delete"
+    make_call session: session, params: "--session-delete"
     nil
   end
 
   def print_session session=@session, pretty: true, format: true, extract: false, only: false
-    kw = {pretty:, format:, extract:, only:}
+    kw = %i[{pretty format extract only].zip([pretty, format, extract, only]).to_h
     false_trans = {pretty: "raw", format: "no-format"}
     kw.each.lazy.map { |k,v|
       if v
@@ -107,7 +107,7 @@ class ChatBladder
         false_trans[k]&.then { "--" + _1 }
       end
     }.compact.to_a.then { |params|
-      make_call session:, params:
+      make_call session: session, params: params
     }
     nil
   end

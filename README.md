@@ -25,7 +25,7 @@ Most ChatGPT clients do not feature **session management**, ie. able to carry on
 
 ## Requirements
 
-- Ruby ≥ 3.1
+- Ruby ≥ 3.0
 - Chatblade ≥ 0.2.1
 
 ## How?
