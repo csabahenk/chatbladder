@@ -65,7 +65,12 @@ class ChatBladder
     question.is_a? String or raise TypeError, "question: got #{question.inspect} (#{question.class}), expecting a string"
     puts "# Session: #{session&.to_s.inspect}" unless quiet
 
-    make_call(session: session, params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact, key: true, sysargs: ?w) { |f| f << question.strip }
+    make_call(session: session,
+              params: [params0, params, prompt&.then { ["--prompt-file", _1.to_s] }].flatten.compact,
+              key: true,
+              sysargs: ?w) { |f|
+      f << question.strip
+    }
     nil
   end
 
