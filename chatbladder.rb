@@ -97,7 +97,7 @@ class ChatBladder
   end
 
   def print_session session=@session, pretty: true, format: true, extract: false, only: false
-    kw = %i[{pretty format extract only].zip([pretty, format, extract, only]).to_h
+    kw = %i[pretty format extract only].zip([pretty, format, extract, only]).to_h
     false_trans = {pretty: "raw", format: "no-format"}
     kw.each.lazy.map { |k,v|
       if v
