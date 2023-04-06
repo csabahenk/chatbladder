@@ -44,6 +44,8 @@ then
 gpt = ChatBladder.new api_key: <OPENAI API KEY>
 # or
 gpt = ChatBladder.new api_key_file: <PATH TO FILE CARRYING API KEY>
+# or if you have OPENAI_API_KEY=<KEY> in environment, then just..
+gpt = ChatBladder.new
 
 gpt.ask %{ What's the most densely populated city on Earth? }
 ```

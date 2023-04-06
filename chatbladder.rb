@@ -33,14 +33,8 @@ class ChatBladder
 
   def initialize api_key: nil, api_key_file: nil, session: nil, params0: "-s", params: nil
     self.session = session
-    self.api_key = case api_key
-    when ENV, :env, :environ, :environment
-      ENV[API_KEY_ENVVAR]
-    when nil
-      api_key_file&.then { |f| IO.read(File.expand_path(f)).strip }
-    else
-      api_key
-    end or raise ArgumentError, "either API key or key file is needed"
+    self.api_key = api_key || api_key_file&.then { |f| IO.read(File.expand_path(f)).strip } || ENV[API_KEY_ENVVAR] ||
+      raise(ArgumentError, "API key not specified")
     self.params0 = [params0, params].flatten.compact
   end
 
